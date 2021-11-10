@@ -28,38 +28,43 @@ int main (int argc, char **argv) {
 	size_t size = strlen(argv[1]);
 	cur = readdir(dir);
 
+	while(cur != NULL){
 
-	char *p = malloc(sizeof(char)*(size + strlen(cur->d_name) +3));
-	strcpy(p,argv[1]);
-	
+		char *p = malloc(sizeof(char)*(size + strlen(cur->d_name) +3));
+		strcpy(p,argv[1]);
+		strcpy(p,"/");
+		strcpy(p,cur->d_name);
 
-	if(stat(p, &st) == -1){
-		printf("Archivo erroneo.");
-		closedir(dir);
-		return -1;
-	} else {
-		if((S_ISREG(st.st_mode)) && ((S_IWUSR | st.st_mode) == 0100)) {
-			printf("Fichero exec: %s* \n", cur->d_name);
+
+		if(lstat(p, &st) == -1){ //OJO con stat para los link devuelve la info del fichero al que apunta
+			printf("Archivo erroneo. \n");
+			closedir(dir);
+			return -1;
+		} else {
+			if (S_ISLNK(st.st_mode)) {
+				char *linkname = malloc(st.st_size+1);
+				readlink(p, linkname, st.st_size+1);
+				printf("Link: %s->%s \n", cur->d_name, linkname);
+				free(linkname);
+			}
+
+			else if((S_ISREG(st.st_mode)) && (access(cur->d_name, X_OK) == 0)) {
+				printf("Fichero exec: %s* \n", cur->d_name);
+				
+			}
+			else if((S_ISREG(st.st_mode)) && (access(cur->d_name, X_OK) != 0)) {
+				printf("Fichero normal: %s \n", cur->d_name);
+				
+			}
+			else if (S_ISDIR(st.st_mode)) {
+				printf("Directorio: %s/ \n", cur->d_name);
+			}
 			
 		}
-		else if((S_ISREG(st.st_mode)) && !((S_IWUSR | st.st_mode) == 0100)) {
-			printf("Fichero normal: %s \n", cur->d_name);
-			
-		}
-		else if (S_ISDIR(st.st_mode)) {
-			printf("Directorio: %s/ \n", cur->d_name);
-		}
-
-		else if (S_ISLNK(st.st_mode)) {
-			char *linkname = malloc(st.st_size+1);
-			readlink(p, linkname, st.st_size+1);
-			printf("Link: %s->%s \n", cur->d_name, linkname);
-			free(linkname);
-		}
-		
+		free(p);
+		cur = readdir(dir);
 	}
 
-	free(p);
 	closedir(dir);
 	return 0;
 
