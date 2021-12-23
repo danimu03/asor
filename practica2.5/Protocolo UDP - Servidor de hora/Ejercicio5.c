@@ -7,6 +7,10 @@
 #include <sys/socket.h>
 #include <time.h>
 
+int cnt;
+void handler(int s) {
+	if(s==SIGTERM) ++cnt;
+}
 
 int main (int argc, char**argv) {
     struct addrinfo h;
@@ -36,7 +40,7 @@ int main (int argc, char**argv) {
     }
 
     freeaddrinfo(res);
-    signal(SIGCHLD, hler);
+    signal(SIGTERM, handler);
     struct sockaddr_storage addr;
     socklen_t len = sizeof(addr);
 
